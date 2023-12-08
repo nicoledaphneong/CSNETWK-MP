@@ -25,6 +25,7 @@ class TCPServer {
 
         public ClientHandler(Socket socket) {
             this.socket = socket;
+            System.out.println(socket.getRemoteSocketAddress() + ": Joined the server");
         }
 
         @Override

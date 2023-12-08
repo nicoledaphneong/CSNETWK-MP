@@ -47,6 +47,7 @@ class TCPClient {
                     new Thread(new ServerHandler(clientSocket)).start();
                     isConnected = true; // Set isConnected to true after successfully connecting to the server
                     System.out.println("Connection to the File Exchange Server is successful!");
+                    continue;
                 } catch (IOException e) {
                     System.out.println("Error: Connection to the Server has failed! Please check IP Address and Port Number.");
                 }
@@ -127,10 +128,11 @@ class TCPClient {
                     clientSocket.close();
                     System.out.println("Connection closed. Thank you!");
                     break;
-                } else {
-                    System.out.println("Error: Command not found.");
                 }
+            } else {
+                System.out.println("Error: Command not found.");
             }
+            
         }
     }
 
