@@ -74,6 +74,21 @@ class TCPClient {
                     continue;
                 }
                 outToServer.writeBytes(sentence + '\n');
+            } else if (sentence.startsWith("/get ")) {
+                if (clientSocket == null) {
+                    System.out.println("Error: Please connect to the server first.");
+                    continue;
+                }
+                String filename = sentence.split(" ", 2)[1];
+                outToServer.writeBytes(sentence + '\n');
+                try {
+                    Path path = Paths.get("ServerFiles/" + filename);
+                    byte[] data = Files.readAllBytes(path);
+                    Files.write(Paths.get(filename), data);
+                    System.out.println("File " + filename + " has been downloaded from the server.");
+                } catch (IOException e) {
+                    System.out.println("Error: Failed to download file.");
+                }
             } else if (sentence.equals("/leave")) {
                 if (clientSocket == null) {
                     System.out.println("Error: Disconnection failed. Please connect to the server first.");

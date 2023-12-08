@@ -72,12 +72,22 @@ class TCPServer {
                         File dir = new File("ServerFiles");
                         File[] files = dir.listFiles();
                         if (files != null) {
-                            outToClient.writeInt(files.length);
+                            outToClient.writeBytes(files.length + "\n");
                             for (File file : files) {
                                 outToClient.writeBytes(file.getName() + '\n');
                             }
                         } else {
-                            outToClient.writeInt(0);
+                            outToClient.writeBytes("0\n");
+                        }
+                    } else if (clientSentence.startsWith("/get ")) {
+                        String filename = clientSentence.split(" ", 2)[1];
+                        try {
+                            Path path = Paths.get("ServerFiles/" + filename);
+                            byte[] data = Files.readAllBytes(path);
+                            Files.write(Paths.get(filename), data);
+                            System.out.println("File " + filename + " has been sent to the client.");
+                        } catch (IOException e) {
+                            System.out.println("Error: Failed to send file.");
                         }
                     }
                 }
