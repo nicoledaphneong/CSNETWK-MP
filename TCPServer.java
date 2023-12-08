@@ -56,8 +56,13 @@ class TCPServer {
                         String filename = clientSentence.split(" ", 2)[1];
                         int size = inStream.readInt();
                         byte[] data = new byte[size];
-                        inStream.readFully(data, 0, size);
-                        Files.write(Paths.get(filename), data);
+                        int bytesRead = 0;
+                        while (bytesRead < size) {
+                            bytesRead += inStream.read(data, bytesRead, size - bytesRead);
+                        }
+                        Path filePath = Paths.get("ServerFiles", filename);
+                        Files.createDirectories(filePath.getParent());
+                        Files.write(filePath, data);
                         System.out.println((alias != null ? alias : socket.getRemoteSocketAddress()) + ": Uploaded " + filename);
                     } else if (clientSentence.equals("/dir")) {
                         File dir = new File(".");
