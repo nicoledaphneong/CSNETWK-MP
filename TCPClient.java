@@ -36,6 +36,7 @@ class TCPClient {
                         clientSocket = new Socket(serverIp, port);
                         outToServer = new DataOutputStream(clientSocket.getOutputStream());
                         new Thread(new ServerHandler(clientSocket)).start();
+                        outToServer.writeBytes("/join\n");
                         System.out.println("Connection to the File Exchange Server is successful!");
                     } catch (IOException e) {
                         System.out.println("Error: Connection to the Server has failed! Please check IP Address and Port Number.");
@@ -65,6 +66,8 @@ class TCPClient {
                     outToServer.writeInt(data.length);
 
                     outToServer.write(data, 0, data.length);
+
+                    System.out.println("File " + filename + " has been sent to the server.");
                 } catch (IOException e) {
                     System.out.println("Error: Failed to send file.");
                 }
