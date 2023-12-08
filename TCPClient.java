@@ -1,5 +1,8 @@
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 class TCPClient {
@@ -47,7 +50,30 @@ class TCPClient {
                 }
                 alias = sentence.split(" ", 2)[1];
                 outToServer.writeBytes(sentence + '\n');
+            } else if (sentence.startsWith("/store ")) {
+                if (clientSocket == null) {
+                    System.out.println("Error: Please connect to the server first.");
+                    continue;
+                }
+                String filename = sentence.split(" ", 2)[1];
+                try {
+                    Path path = Paths.get(filename);
+                    byte[] data = Files.readAllBytes(path);
 
+                    outToServer.writeBytes(sentence + '\n');
+
+                    outToServer.writeInt(data.length);
+
+                    outToServer.write(data, 0, data.length);
+                } catch (IOException e) {
+                    System.out.println("Error: Failed to send file.");
+                }
+            } else if (sentence.equals("/dir")) {
+                if (clientSocket == null) {
+                    System.out.println("Error: Please connect to the server first.");
+                    continue;
+                }
+                outToServer.writeBytes(sentence + '\n');
             } else if (sentence.equals("/leave")) {
                 if (clientSocket == null) {
                     System.out.println("Error: Disconnection failed. Please connect to the server first.");
@@ -64,18 +90,33 @@ class TCPClient {
 
     static class ServerHandler implements Runnable {
         private Socket socket;
-
+    
         public ServerHandler(Socket socket) {
             this.socket = socket;
         }
-
+    
         @Override
         public void run() {
             try {
                 BufferedReader inFromServer = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                DataInputStream inStream = new DataInputStream(socket.getInputStream());
                 while (true) {
                     String serverSentence = inFromServer.readLine();
-                    System.out.println("FROM SERVER: " + serverSentence);
+                    if (serverSentence == null) {
+                        System.out.println("Server has disconnected.");
+                        socket.close();
+                        break;
+                    } else if (serverSentence.startsWith("/dir ")) {
+                        int count = inStream.readInt();
+                        System.out.println("Directory listing:");
+                        for (int i = 0; i < count; i++) {
+                            System.out.println(inFromServer.readLine());
+                        }
+                    } else if (serverSentence.startsWith("Stored file ")) {
+                        System.out.println(serverSentence);
+                    } else {
+                        System.out.println("FROM SERVER: " + serverSentence);
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
