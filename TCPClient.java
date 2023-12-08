@@ -60,13 +60,10 @@ class TCPClient {
                 try {
                     Path path = Paths.get(filename);
                     byte[] data = Files.readAllBytes(path);
-
-                    outToServer.writeBytes(sentence + '\n');
-
-                    outToServer.writeInt(data.length);
-
+            
+                    outToServer.writeBytes(sentence + ' ' + data.length + '\n');
                     outToServer.write(data, 0, data.length);
-
+            
                     System.out.println("File " + filename + " has been sent to the server.");
                 } catch (IOException e) {
                     System.out.println("Error: Failed to send file.");
@@ -118,7 +115,7 @@ class TCPClient {
                     } else if (serverSentence.startsWith("Stored file ")) {
                         System.out.println(serverSentence);
                     } else {
-                        System.out.println("FROM SERVER: " + serverSentence);
+                        System.out.println(serverSentence);
                     }
                 }
             } catch (IOException e) {

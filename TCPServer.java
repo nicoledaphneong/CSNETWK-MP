@@ -53,26 +53,32 @@ class TCPServer {
                     } else if (clientSentence.startsWith("/join")) {
                         System.out.println(socket.getRemoteSocketAddress() + ": Joined the server");
                     } else if (clientSentence.startsWith("/store ")) {
-                        String filename = clientSentence.split(" ", 2)[1];
-                        int size = inStream.readInt();
-                        byte[] data = new byte[size];
-                        int bytesRead = 0;
-                        while (bytesRead < size) {
-                            bytesRead += inStream.read(data, bytesRead, size - bytesRead);
+                        String[] parts = clientSentence.split(" ");
+                        if (parts.length == 3) {
+                            String filename = parts[1];
+                            long size = Long.parseLong(parts[2]);
+
+                            byte[] data = new byte[(int)size];
+                            inStream.readFully(data);
+
+                            Path filePath = Paths.get("ServerFiles", filename);
+                            Files.createDirectories(filePath.getParent());
+                            Files.write(filePath, data);
+
+                            System.out.println((alias != null ? alias : socket.getRemoteSocketAddress()) + ": Uploaded " + filename);
+                            outToClient.writeBytes("File stored successfully\n");
                         }
-                        Path filePath = Paths.get("ServerFiles", filename);
-                        Files.createDirectories(filePath.getParent());
-                        Files.write(filePath, data);
-                        System.out.println((alias != null ? alias : socket.getRemoteSocketAddress()) + ": Uploaded " + filename);
                     } else if (clientSentence.equals("/dir")) {
-                        File dir = new File(".");
+                        File dir = new File("ServerFiles");
                         File[] files = dir.listFiles();
-                        outToClient.writeInt(files.length);
-                        for (File file : files) {
-                            outToClient.writeBytes(file.getName() + '\n');
+                        if (files != null) {
+                            outToClient.writeInt(files.length);
+                            for (File file : files) {
+                                outToClient.writeBytes(file.getName() + '\n');
+                            }
+                        } else {
+                            outToClient.writeInt(0);
                         }
-                    } else {
-                        System.out.println("FROM CLIENT: " + clientSentence);
                     }
                 }
             } catch (IOException e) {
