@@ -72,7 +72,7 @@ class TCPServer {
                         File dir = new File("ServerFiles");
                         File[] files = dir.listFiles();
                         if (files != null) {
-                            outToClient.writeBytes(files.length + "\n");
+                            //outToClient.writeBytes(files.length + "\n");
                             for (File file : files) {
                                 outToClient.writeBytes(file.getName() + '\n');
                             }
