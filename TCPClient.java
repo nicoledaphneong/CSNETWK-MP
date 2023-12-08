@@ -7,6 +7,7 @@ import java.util.*;
 
 class TCPClient {
     public static void main(String argv[]) throws Exception {
+        boolean isConnected = false;
         String serverIp = null;
         int port = 0;
         Socket clientSocket = null;
@@ -22,39 +23,45 @@ class TCPClient {
             if (sentence.trim().isEmpty()) {
                 continue;
             }
-            if (sentence.startsWith("/")) {
-                if (sentence.startsWith("/join ")) {
-                    String[] parts = sentence.split(" ");
-                    if (parts.length == 3) {
-                        serverIp = parts[1];
-                        port = Integer.parseInt(parts[2]);
-                        try {
-                            clientSocket = new Socket(serverIp, port);
-                            outToServer = new DataOutputStream(clientSocket.getOutputStream());
-                            new Thread(new ServerHandler(clientSocket)).start();
-                            outToServer.writeBytes("/join\n");
-                            System.out.println("Connection to the File Exchange Server is successful!");
-                        } catch (IOException e) {
-                            System.out.println("Error: Connection to the Server has failed! Please check IP Address and Port Number.");
-                        }
-                    } else {
-                        System.out.println("Error: Connection to the Server has failed! Please check IP Address and Port Number.");
-                    }
-                } else if (clientSocket == null) {
-                    System.out.println("Error: Command failed. Please connect to the server first.");
+        
+            if (clientSocket == null && !sentence.startsWith("/join")) {
+                System.out.println("Error: Command failed. Please connect to the server first.");
+                continue;
+            }
+        
+            if (sentence.startsWith("/join")) {
+                String[] parts = sentence.split(" ");
+                if (parts.length != 3) {
+                    System.out.println("Error: Command parameters do not match or is not allowed.");
                     continue;
                 }
-    
-                if (sentence.equals("/?") || sentence.equals("/leave") || sentence.startsWith("/register ") || sentence.startsWith("/store ") || sentence.equals("/dir") || sentence.startsWith("/get ")) {
-                    if (sentence.equals("/?")) {
-                        System.out.println("/join <server_ip_add> <port> - Connect to the server application");
-                        System.out.println("/leave - Disconnect to the server application");
-                        System.out.println("/register <handle> - Register a unique handle or alias");
-                        System.out.println("/store <filename> - Send file to server");
-                        System.out.println("/dir - Request directory file list from a server");
-                        System.out.println("/get <filename> - Fetch a file from a server");
-                        System.out.println("/? - Request command help to output all Input Syntax commands for references");
-                    } else if (sentence.startsWith("/register ")) {
+                if (isConnected) {
+                    System.out.println("Error: You are already connected to the server.");
+                    continue;
+                }
+                serverIp = parts[1];
+                port = Integer.parseInt(parts[2]);
+                try {
+                    clientSocket = new Socket(serverIp, port);
+                    outToServer = new DataOutputStream(clientSocket.getOutputStream());
+                    new Thread(new ServerHandler(clientSocket)).start();
+                    isConnected = true; // Set isConnected to true after successfully connecting to the server
+                    System.out.println("Connection to the File Exchange Server is successful!");
+                } catch (IOException e) {
+                    System.out.println("Error: Connection to the Server has failed! Please check IP Address and Port Number.");
+                }
+            }
+        
+            if (sentence.equals("/?") || sentence.equals("/leave") || sentence.startsWith("/register ") || sentence.startsWith("/store ") || sentence.equals("/dir") || sentence.startsWith("/get ")) {
+                if (sentence.equals("/?")) {
+                    System.out.println("/join <server_ip_add> <port> - Connect to the server application");
+                    System.out.println("/leave - Disconnect to the server application");
+                    System.out.println("/register <handle> - Register a unique handle or alias");
+                    System.out.println("/store <filename> - Send file to server");
+                    System.out.println("/dir - Request directory file list from a server");
+                    System.out.println("/get <filename> - Fetch a file from a server");
+                    System.out.println("/? - Request command help to output all Input Syntax commands for references");
+                } else if (sentence.startsWith("/register ")) {
                     if (clientSocket == null) {
                         System.out.println("Error: Registration failed. Handle or alias already exists.");
                         continue;
@@ -62,8 +69,12 @@ class TCPClient {
                     alias = sentence.split(" ", 2)[1];
                     outToServer.writeBytes(sentence + '\n');
                 } else if (sentence.startsWith("/store ")) {
-                    if (clientSocket == null || alias == null) {
+                    if (clientSocket == null) {
                         System.out.println("Error: Please connect to the server first.");
+                        continue;
+                    }
+                    if (alias == null) {
+                        System.out.println("Error: Please register first.");
                         continue;
                     }
                     String filename = sentence.split(" ", 2)[1];
@@ -79,15 +90,23 @@ class TCPClient {
                         System.out.println("Error: File not found.");
                     }
                 } else if (sentence.equals("/dir")) {
-                    if (clientSocket == null || alias == null) {
+                    if (clientSocket == null) {
                         System.out.println("Error: Please connect to the server first.");
+                        continue;
+                    }
+                    if (alias == null) {
+                        System.out.println("Error: Please register first.");
                         continue;
                     }
                     System.out.println("Server Directory");
                     outToServer.writeBytes(sentence + '\n');
                 } else if (sentence.startsWith("/get ")) {
-                    if (clientSocket == null || alias == null) {
+                    if (clientSocket == null) {
                         System.out.println("Error: Please connect to the server first.");
+                        continue;
+                    }
+                    if (alias == null) {
+                        System.out.println("Error: Please register first.");
                         continue;
                     }
                     String filename = sentence.split(" ", 2)[1];
@@ -108,18 +127,12 @@ class TCPClient {
                     clientSocket.close();
                     System.out.println("Connection closed. Thank you!");
                     break;
-                } 
-                else if (sentence.contains(" ")) {
-                    System.out.println("Error: Command parameters do not match or is not allowed.");
-                } else if (clientSocket != null) {
-                    outToServer.writeBytes((alias != null ? alias + ": " : "") + sentence + '\n');
                 } else {
                     System.out.println("Error: Command not found.");
                 }
             }
         }
     }
-}
 
     static class ServerHandler implements Runnable {
         private Socket socket;
